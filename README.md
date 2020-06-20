@@ -7,7 +7,7 @@ To my surprise, this hasn't deterred the faith of industry in hedging and the ai
 
 I took a dataset on the jet fuel prices for the last 2 decades and analyzed how hedging could have helped save or resulted in companies paying more than the market value. And as I continued my analysis, I realized hedging is not a tool to make profits. It is a risk-aversion tool and infuses certainty in the system.
 
-Dataset link: https://www.reuters.com/article/health-coronavirus-airlines-oil/rpt-update-1-steep-capacity-cut-leaves-airlines-with-overhedged-jet-fuel-headache-idUSL8N2BF1E8#:~:text=Ryanair%20has%2090%25%20of%20its,price%20of%20%2460%20per%20barrel.
+Dataset link: https://www.indexmundi.com/commodities/?commodity=jet-fuel&months=240
 
 Introduction to hedging: https://www.investopedia.com/articles/optioninvestor/07/hedging-intro.asp
 
