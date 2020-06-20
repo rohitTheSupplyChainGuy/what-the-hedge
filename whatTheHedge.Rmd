@@ -68,6 +68,7 @@ for(i in 1:nrow(secondDecade)){
   fiveYearHedgeAmount[i] <- fiveYearHedgeAmount[i] + (meanOfLastFiveYears * secondDecade$totalConsumptioninMillionOfGallon[i])
   lastYearHedgeAmount[i] <- lastYearHedgeAmount[i] + (meanOfLastYear * secondDecade$totalConsumptioninMillionOfGallon[i])
 }
+
 dataForBarPlot <- data.table(var1 = c("10-year avg price","5-year avg price","1-year avg price"),
                              var2 = c(sum(payAsUsageAmount)/1000 - sum(tenYearHedgedAmount)/1000,
                                      sum(payAsUsageAmount)/1000- sum(fiveYearHedgeAmount)/1000,
