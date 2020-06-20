@@ -1,0 +1,174 @@
+---
+title: "whatTheHedge"
+author: "Rohit Tolawat"
+date: "6/19/2020"
+output:
+html_document:
+df_print: paged
+---
+
+```{r loadpackages, warning=FALSE, message=FALSE}
+pacman::p_load(caret, data.table, ggplot2,gridExtra)
+knitr::opts_chunk$set(echo = FALSE, fig.width=12, fig.height=6, fig.path = 'Figs/')
+options(digits = 3)
+```
+
+```{r importing the file}
+jetFuelData <- read.csv("C:/Users/rohit/Desktop/Analytics Project/What-The-Hedge/fuel-data.csv", header = TRUE)
+
+jetFuelData.dt <- setDT(jetFuelData)
+jetFuelData.dt$dateNumber <- as.Date(jetFuelData.dt$dateNumber,origin = "1899-12-30")
+str(jetFuelData.dt)
+```
+
+
+```{r checking variation of jet fuel prices over the last 2 decades}
+plot1 <- ggplot(jetFuelData.dt, aes(x=jetFuelData.dt$dateNumber, y=jetFuelData.dt$costPerGallon)) +
+          geom_line(color="red") +
+          ggtitle("Variation in jet fuel price(per gallon) between Jan'00-Apr'20") +
+          xlab("Date") + ylab("Cost per gallon(in $)") +
+          theme(plot.title = element_text(size = 14, face = "bold"))
+
+plot2 <-  ggplot(jetFuelData.dt, aes(x=jetFuelData.dt$dateNumber, y=jetFuelData.dt$totalConsumptioninMillionOfGallon)) +
+          geom_line(color="red") +
+          ggtitle("Jet fuel consumption (in millions of gallons) between Jan'00-Apr'20") +
+          xlab("Date") + ylab("Consumption in millions of gallons") +
+          theme(plot.title = element_text(size = 12, face = "bold"))
+grid.arrange(plot1,plot2,nrow=1)
+```
+#Insights corner: While per gallon price of the jet fuel shot at its peak after the 2007 financial crisis, it can be noted that the commodity price is volatile with high fluctuations. To eliminate this volatility in the price, we are trying to analyze the impact of hedging.
+#Surprisingly, the consumption plot shows  a cyclic pattern of low and high consumption. Let's park its analysis for some other day and time.
+```{r}
+firstDecade <- jetFuelData.dt[dateNumber>="2000-01-01" & dateNumber<="2009-12-01"]
+secondDecade <- jetFuelData.dt[dateNumber>="2010-01-01" & dateNumber<="2019-12-01"]
+lastFiveYears <- jetFuelData.dt[dateNumber>="2005-01-01" & dateNumber<="2009-12-01"]
+lastYear <- jetFuelData.dt[dateNumber>="2006-01-01" & dateNumber<="2009-12-01"]
+
+meanOfFirstDecade <- mean(firstDecade$costPerGallon)
+meanOfSecondDecade <- mean(secondDecade$costPerGallon)
+meanOfLastFiveYears <- mean(lastFiveYears$costPerGallon)
+meanOfLastYear <-  mean(lastYear$costPerGallon)
+
+paste("Mean value of jet fuel per gallon (Jan'00-Dec'09) = ", round(meanOfFirstDecade,2))
+paste("Mean value of jet fuel per gallon (Jan'05-Dec'09) = ", round(meanOfLastFiveYears,2))
+paste("Mean value of jet fuel per gallon (Jan'09-Dec'09) = ", round(meanOfLastYear,2))
+```
+
+
+```{r}
+tenYearHedgedAmount <- c(1:nrow(secondDecade))
+payAsUsageAmount <- c(1:nrow(secondDecade))
+fiveYearHedgeAmount <- c(1:nrow(secondDecade))
+lastYearHedgeAmount <- c(1:nrow(secondDecade))
+
+
+for(i in 1:nrow(secondDecade)){
+  tenYearHedgedAmount[i] <- tenYearHedgedAmount[i] + (meanOfFirstDecade * secondDecade$totalConsumptioninMillionOfGallon[i])
+  payAsUsageAmount[i] <- payAsUsageAmount[i] +  (secondDecade$costPerGallon[i] * secondDecade$totalConsumptioninMillionOfGallon[i])
+  fiveYearHedgeAmount[i] <- fiveYearHedgeAmount[i] + (meanOfLastFiveYears * secondDecade$totalConsumptioninMillionOfGallon[i])
+  lastYearHedgeAmount[i] <- lastYearHedgeAmount[i] + (meanOfLastYear * secondDecade$totalConsumptioninMillionOfGallon[i])
+}
+dataForBarPlot <- data.table(var1 = c("10-year avg price","5-year avg price","1-year avg price"),
+                             var2 = c(sum(payAsUsageAmount)/1000 - sum(tenYearHedgedAmount)/1000,
+                                     sum(payAsUsageAmount)/1000- sum(fiveYearHedgeAmount)/1000,
+                                     sum(payAsUsageAmount)/1000 - sum(lastYearHedgeAmount)/1000), 
+                             var3 = c("10-year avg price","5-year avg price","1-year avg price"))
+
+dataForBarPlot$var3 <- as.factor(dataForBarPlot$var3)
+dataForBarPlot$var3 <- factor(dataForBarPlot$var3, levels = c("1-year avg price","5-year avg price","10-year avg price"))
+
+  
+```
+
+```{r hedging scenario 1}
+plot1 <- ggplot(secondDecade, aes(x=secondDecade$dateNumber, y=secondDecade$costPerGallon)) +
+          geom_line(color="red") +
+          ggtitle("Wouldn't it be good if entire world hedged (Jan'10-Dec'19)") +
+          xlab("Date") + ylab("Cost per gallon (in $)") +
+          geom_hline(yintercept = meanOfFirstDecade, linetype = "dashed", color = "black") +
+          geom_hline(yintercept = meanOfLastFiveYears, linetype = "dashed", color = "blue") + 
+          geom_hline(yintercept = meanOfLastYear, linetype = "dashed", color = "Brown") +
+          theme(plot.title = element_text(size = 14, face = "bold"))
+
+plot2 <- ggplot(dataForBarPlot,aes(x = reorder(dataForBarPlot$var1, dataForBarPlot$var2), y = dataForBarPlot$var2)) +
+          geom_bar(stat = "identity", aes(fill = dataForBarPlot$var3)) +
+          ggtitle("Could have gained billions") +
+          xlab("Hedge strategy chosen") + ylab("Amount(in billions of $) saved by hedging") +
+          labs(fill = "Hedge type") + 
+          scale_fill_manual(values = c("Brown","blue","black")) +
+          theme(plot.title = element_text(size = 14, face = "bold"))
+
+grid.arrange(plot1,plot2,nrow = 1)
+```
+#Insights corner: Hedging would have worked wonders, wouldn't it ? After all, we are saving billions of dollars by by hedging onto the average price from the past.
+
+
+```{r}
+fiveYearAnalysis <- jetFuelData.dt[dateNumber>="2015-01-01" & dateNumber<="2019-12-01"]
+
+decadeBeforeFiveYearAnalysis <- jetFuelData.dt[dateNumber>="2005-01-01" & dateNumber<="2014-12-01"]
+fiveYearsBeforeFiveYearAnalysis <- jetFuelData.dt[dateNumber>="2010-01-01" & dateNumber<="2014-12-01"]
+oneYearBeforeFiveYearAnalysis <- jetFuelData.dt[dateNumber>="2014-01-01" & dateNumber<="2014-12-01"]
+
+meanForDecadeBeforeFiveYearAnalysis <- mean(decadeBeforeFiveYearAnalysis$costPerGallon)
+meanforFiveYearsBeforeeFiveYearAnalysis <- mean(fiveYearsBeforeFiveYearAnalysis$costPerGallon)
+meanForoneYearBeforeFiveYearAnalysis <- mean(oneYearBeforeFiveYearAnalysis$costPerGallon)
+
+paste("Mean value of jet fuel per gallon (Jan'05-Dec'14) = ", round(meanForDecadeBeforeFiveYearAnalysis,2))
+paste("Mean value of jet fuel per gallon (Jan'10-Dec'14) = ", round(meanforFiveYearsBeforeeFiveYearAnalysis,2))
+paste("Mean value of jet fuel per gallon (Jan'14-Dec'14) = ", round(meanForoneYearBeforeFiveYearAnalysis,2))
+
+```
+
+
+```{r hedging scenario 2}
+tenYearHedgedAmount <- c(1:nrow(fiveYearAnalysis))
+payAsUsageAmount <- c(1:nrow(fiveYearAnalysis))
+fiveYearHedgeAmount <- c(1:nrow(fiveYearAnalysis))
+lastYearHedgeAmount <- c(1:nrow(fiveYearAnalysis))
+
+
+for(i in 1:nrow(fiveYearAnalysis)){
+  tenYearHedgedAmount[i] <- tenYearHedgedAmount[i] + (meanForDecadeBeforeFiveYearAnalysis *        fiveYearAnalysis$totalConsumptioninMillionOfGallon[i])
+payAsUsageAmount[i] <- payAsUsageAmount[i] +  (fiveYearAnalysis$costPerGallon[i] * fiveYearAnalysis$totalConsumptioninMillionOfGallon[i])
+fiveYearHedgeAmount[i] <- fiveYearHedgeAmount[i] + (meanforFiveYearsBeforeeFiveYearAnalysis * fiveYearAnalysis$totalConsumptioninMillionOfGallon[i])
+lastYearHedgeAmount[i] <- lastYearHedgeAmount[i] + (meanForoneYearBeforeFiveYearAnalysis * fiveYearAnalysis$totalConsumptioninMillionOfGallon[i])
+}
+
+dataForBarPlot <- data.table(var1 = c("10-year avg price","5-year avg price","1-year avg price"),
+var2 = c((sum(payAsUsageAmount)/1000) - (sum(tenYearHedgedAmount)/1000),
+         (sum(payAsUsageAmount)/1000)- (sum(fiveYearHedgeAmount)/1000),
+         (sum(payAsUsageAmount)/1000) - (sum(lastYearHedgeAmount)/1000)),
+var3 = c("10-year avg price","5-year avg price","1-year avg price"))
+
+dataForBarPlot$var3 <- as.factor(dataForBarPlot$var3)
+dataForBarPlot$var3 <- factor(dataForBarPlot$var3, levels = c("1-year avg price","5-year avg price","10-year avg price"))
+```
+
+
+```{r}
+plot1 <- ggplot(fiveYearAnalysis, aes(x=fiveYearAnalysis$dateNumber, y=fiveYearAnalysis$costPerGallon)) +
+          geom_line(color="red") +
+          ggtitle("Hedging doesn't always work wonders(Jan'15-Dec'19)") +
+          xlab("Date") + ylab("Cost per gallon (in $)") +
+          geom_hline(yintercept = meanForDecadeBeforeFiveYearAnalysis, linetype = "dashed", color = "black") +
+          geom_hline(yintercept = meanforFiveYearsBeforeeFiveYearAnalysis, linetype = "dashed", color = "blue") +
+          geom_hline(yintercept = meanForoneYearBeforeFiveYearAnalysis, linetype = "dashed", color = "Brown") + 
+          theme(plot.title = element_text(size = 14, face = "bold"))
+
+plot2 <- ggplot(dataForBarPlot,aes(x = reorder(dataForBarPlot$var1,-dataForBarPlot$var2), y = dataForBarPlot$var2)) +
+          geom_bar(stat = "identity", aes(fill = as.factor(dataForBarPlot$var3))) +
+          ggtitle("Could have lost billions") +
+          xlab("Hedge strategy chosen") + ylab("Amount(in billions of $) lost due to hedging") +
+          labs(fill = "Hedge type") + 
+          scale_fill_manual(values = c("Brown","blue","black"))+ 
+          theme(plot.title = element_text(size = 14, face = "bold"))
+
+grid.arrange(plot1,plot2,nrow = 1)
+```
+#Insights corner: Just when we thought that we really have an amazing tool to counter the volatility, we come across the above grahps. In case markets fall and jet fuel prices shoot below the hedge, we pay more than the market value of the commodity.
+
+#Conclusion: Hedging does not ensure profit, it isn't the purpose of it anyway. It should and must be used to infuse certainty. When hedged, the balance sheet of the company is immune to fluctations in the price of the commodity.
+#Another interesting conclusion is the fact that during in either of the situations, hedging prices obtained from longer duration has worked better. Perhaps, taking an average of longer duration suppresses the impact of highs and lows.
+
+
