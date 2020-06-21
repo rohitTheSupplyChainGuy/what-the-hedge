@@ -1,5 +1,5 @@
 # what-the-hedge
-I heard about hedging in one of my classes and it did not really interest me. But skimming through an article on Reuters brought the attention back to the topic. The current scenario of COVID has been a nightmare for airline industry when people are scared to travel in close proximity and closed spaces.
+I heard about hedging in one of my classes and it did not really interest me in the beginning. But skimming through an article on Reuters brought the attention back to the topic. The current scenario of COVID has been a nightmare for airline industry when people are scared to travel in close proximity and closed spaces.
 I wondered airlines would have been regretting having hedged fuel prices i.e. paying fixed price for the fuel that was set before the pandemic. This fixed price would certainly be higher than the current price levels of the fuel.
 I imagined this would be the end of hedging.
 
